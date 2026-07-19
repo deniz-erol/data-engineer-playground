@@ -9,5 +9,5 @@ tbi_demo:
       role: "{{ env_var('SNOWFLAKE_ROLE') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
-      schema: PUBLIC
+      schema: CI
       threads: 4

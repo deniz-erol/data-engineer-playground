@@ -4,6 +4,8 @@
 # name or the intended use of these models
 name: 'tbi_demo'
 version: '1.0.0'
+require-dbt-version: [">=1.12.0", "<1.13.0"]
+
 
 # This setting configures which "profile" dbt uses for this project.
 profile: 'tbi_demo'

@@ -95,9 +95,10 @@ models/
     └── nation_sales.sql
 ```
 
-**Materialization strategy** (in `dbt_project.yml`):
+**Materialization strategy** (in `dbt_project.yml`, overridden per-model where needed):
 - `staging` / `intermediate` → **views** (lightweight, always fresh)
-- `marts` → **tables** (frequently queried by consumers, materialized for performance)
+- `marts` → **tables** (frequently queried, materialized for performance)
+- `fact_orders` → **incremental** (merge strategy on `order_id`) — at ~1.5M rows, only new orders are processed on each run instead of a full rebuild, using `is_incremental()` and a watermark on `order_date`. The `unique_key` makes reruns idempotent.
 
 **Sources:** raw TPCH tables are declared in `_tpch_sources.yml` and referenced with `{{ source(...) }}` rather than hard-coded paths — enabling lineage and centralized source management.
 
@@ -105,7 +106,7 @@ models/
 
 ## Data quality tests
 
-Defined in the `_*.yml` files, run with `dbt test`. 18 tests across all layers, including:
+Defined in the `_*.yml` files, run with `dbt test`. Generic tests on every model across all layers, including:
 
 | Test | Purpose |
 |---|---|

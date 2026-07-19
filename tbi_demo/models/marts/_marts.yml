@@ -10,6 +10,19 @@ models:
           - unique
           - not_null
 
+  - name: dim_nation
+    description: "Nation dimension table with descriptive attributes"
+    columns:
+      - name: nation_id
+        description: "Primary key for nations"
+        tests:
+          - unique
+          - not_null
+      - name: nation_name
+        description: "Name of the nation"
+        tests:
+          - not_null
+
   - name: fact_orders
     description: "Order fact table with one row per order"
     columns:
@@ -46,6 +59,15 @@ models:
     columns:
       - name: nation_name
         description: "Country name"
+        tests:
+          - unique
+          - not_null
+
+  - name: monthly_revenue
+    description: "Monthly revenue, order count, and average order value (time-series)"
+    columns:
+      - name: order_month
+        description: "First day of the month (month bucket)"
         tests:
           - unique
           - not_null

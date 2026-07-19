@@ -27,7 +27,8 @@ jobs:
           python-version: "3.12"
 
       - name: Install dbt-snowflake
-        run: pip install dbt-snowflake
+        run: pip install "dbt-snowflake==1.12.*"
+
 
       - name: Run dbt build
         working-directory: ./tbi_demo
