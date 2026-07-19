@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Customer dimension table with descriptive attributes"
+    columns:
+      - name: customer_id
+        description: "Primary key for customers"
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_orders
+    description: "Order fact table with one row per order"
+    columns:
+      - name: order_id
+        description: "Primary key for orders"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
