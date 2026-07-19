@@ -26,3 +26,26 @@ models:
               arguments:
                 to: ref('dim_customers')
                 field: customer_id
+
+  - name: customer_metrics
+    description: "Customer-level metrics with spending rank, order counts, and lifetime value"
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: spending_rank
+        description: "Rank by total spending (1 = highest)"
+        tests:
+          - unique
+          - not_null
+  
+  - name: nation_sales
+    description: "Revenue and order metrics aggregated by nation"
+    columns:
+      - name: nation_name
+        description: "Country name"
+        tests:
+          - unique
+          - not_null
