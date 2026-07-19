@@ -71,3 +71,19 @@ models:
         tests:
           - unique
           - not_null
+
+  - name: customer_segments
+    description: "Customer segmentation based on spending quartiles"
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        description: "Segment label based on spending quartiles"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['High Value', 'Regular', 'Occasional', 'Low Value']
