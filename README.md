@@ -8,11 +8,11 @@ Built hands-on to model a modern ELT pipeline from raw source data to analysis-r
 
 ## Lineage
 
-The full DAG, generated automatically by dbt from `ref()` and `source()` dependencies:
+Interactive, always-current lineage graph — auto-generated and deployed via GitHub Actions on every push:
+
+**https://deniz-erol.github.io/data-engineer-playground/#!/overview?g_v=1**
 
 ![Lineage Graph](tbi_demo/docs/lineage/lineage.png)
-
-Raw sources (green) flow left to right through staging, intermediate, and marts.
 
 ---
 
