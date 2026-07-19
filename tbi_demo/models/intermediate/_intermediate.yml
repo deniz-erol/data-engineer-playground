@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: int_customer_orders
+    description: "Intermediate model that joins customers and orders"
+    columns:
+      - name: customer_id
+        description: "Primary key for customers"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "Name of the customer"
+      - name: order_id
+        description: "Primary key for orders"
+        tests:
+          - unique
+          - not_null
+      - name: total_price
+        description: "Total price of the order"
+      - name: order_date
+        description: "Date when the order was placed"

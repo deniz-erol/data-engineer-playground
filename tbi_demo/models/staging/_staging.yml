@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Staging model for the customer table from the TPCH dataset"
+    columns:
+      - name: customer_id
+        description: "Primary key for customers"
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "Name of the customer"
+      - name: nation_id
+        description: "Foreign key to the nation table"
+      - name: account_balance
+        description: "Account balance of the customer"
+      - name: market_segment
+        description: "Market segment of the customer"
+
+  - name: stg_orders
+    description: "Staging model for the orders table from the TPCH dataset"
+    columns:
+      - name: order_id
+        description: "Primary key for orders"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to the customer table"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+      - name: total_price
+        description: "Total price of the order"
+      - name: order_date
+        description: "Date when the order was placed"
+      - name: order_status
+        description: "Status of the order"
