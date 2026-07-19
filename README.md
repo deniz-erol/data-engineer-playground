@@ -1,8 +1,18 @@
 # Data Engineering Demo — Modern Data Stack with dbt & Snowflake
 
-A small but production-styled analytics engineering project built on **dbt Core** and **Snowflake**, following a layered (staging → intermediate → marts) architecture with a star-schema data mart, source definitions, data tests, and layer-based materialization.
+An end-to-end analytics engineering project built on **dbt Core** and **Snowflake**, following a layered (staging → intermediate → marts) architecture with a star-schema data model, source definitions, data quality tests, layer-based materialization, and CI on GitHub Actions.
 
-Built as a hands-on demo to model a modern ELT pipeline end to end.
+Built hands-on to model a modern ELT pipeline from raw source data to analysis-ready marts.
+
+---
+
+## Lineage
+
+The full DAG, generated automatically by dbt from `ref()` and `source()` dependencies:
+
+![Lineage Graph](tbi_demo/docs/lineage/lineage.png)
+
+Raw sources (green) flow left to right through staging, intermediate, and marts.
 
 ---
 
@@ -13,37 +23,37 @@ Built as a hands-on demo to model a modern ELT pipeline end to end.
 | Data warehouse | Snowflake |
 | Transformation / modeling | dbt Core (SQL) |
 | Source data | Snowflake `SNOWFLAKE_SAMPLE_DATA` (TPCH_SF1 — ~1.5M orders) |
+| CI | GitHub Actions |
 | Version control | Git / GitHub |
 
 ---
 
 ## Architecture
 
-Classic ELT flow: raw data is **loaded** into the warehouse, then **transformed** in place with dbt.
+Classic **ELT**: raw data is **loaded** into the warehouse, then **transformed** in place with dbt.
 
 ```
-SNOWFLAKE_SAMPLE_DATA (raw TPCH)
+SNOWFLAKE_SAMPLE_DATA (raw TPCH: customer, orders, nation)
         │  (dbt sources)
         ▼
-   staging   →   stg_customers, stg_orders        (light cleaning, renamed columns) [views]
+   staging      →  stg_customers, stg_orders, stg_nation      (cleaning, renamed columns) [views]
         │
         ▼
- intermediate →  int_customer_orders              (joins + aggregation)             [view]
+ intermediate   →  int_customer_orders                         (joins + aggregation)      [view]
         │
         ▼
-    marts     →  dim_customers, fact_orders        (star schema)                     [tables]
+    marts        →  dim_customers, fact_orders                 (star schema)              [tables]
+                    monthly_revenue, customer_metrics, nation_sales   (business marts)    [tables]
         │
         ▼
    BI / analytics (Power BI, Snowsight, ...)
 ```
 
-**Why layered:** each layer has a single responsibility — staging standardizes raw data, intermediate applies business logic, marts serves analysis-ready tables. This mirrors software layering (separation of concerns) and keeps transformations testable and maintainable.
+**Why layered:** each layer has one responsibility — staging standardizes raw data, intermediate applies business logic, marts serve analysis-ready tables. This mirrors software layering (separation of concerns) and keeps transformations testable and maintainable. Simple marts read directly from staging; the intermediate layer is used only where transformation logic is complex enough to be worth splitting.
 
 ---
 
 ## Data model (star schema)
-
-The marts layer is modeled dimensionally:
 
 - **`fact_orders`** — one row per order; numeric measures (`total_price`) plus a foreign key (`customer_id`) to the customer dimension. ~1.5M rows.
 - **`dim_customers`** — descriptive customer attributes (name, market segment, nation, account balance). ~150K rows.
@@ -52,23 +62,40 @@ Analytical questions are answered by joining the fact to its dimensions, filteri
 
 ---
 
+## Marts (business-facing tables)
+
+| Mart | What it answers |
+|---|---|
+| `monthly_revenue` | Revenue, order count and average order value per month (time-series) |
+| `customer_metrics` | Per-customer order count, total spend, lifetime span, and spending rank (window function) |
+| `nation_sales` | Revenue and order metrics by country (geographic breakdown) |
+| `int_customer_orders` | Customer-level order summary (intermediate building block) |
+
+---
+
 ## Layers & models
 
 ```
 models/
 ├── staging/
-│   ├── _tpch_sources.yml      # raw source definitions (TPCH tables)
-│   ├── stg_customers.sql      # cleaned customers (view)
-│   └── stg_orders.sql         # cleaned orders (view)
+│   ├── _tpch_sources.yml      # raw source definitions (customer, orders, nation)
+│   ├── _staging.yml           # tests + documentation
+│   ├── stg_customers.sql
+│   ├── stg_orders.sql
+│   └── stg_nation.sql
 ├── intermediate/
-│   └── int_customer_orders.sql   # customer-level order summary (view)
+│   ├── _intermediate.yml
+│   └── int_customer_orders.sql
 └── marts/
     ├── _marts.yml             # tests + documentation
-    ├── dim_customers.sql      # customer dimension (table)
-    └── fact_orders.sql        # order fact (table)
+    ├── dim_customers.sql
+    ├── fact_orders.sql
+    ├── monthly_revenue.sql
+    ├── customer_metrics.sql
+    └── nation_sales.sql
 ```
 
-**Materialization strategy** (set in `dbt_project.yml`):
+**Materialization strategy** (in `dbt_project.yml`):
 - `staging` / `intermediate` → **views** (lightweight, always fresh)
 - `marts` → **tables** (frequently queried by consumers, materialized for performance)
 
@@ -78,16 +105,24 @@ models/
 
 ## Data quality tests
 
-Defined in `_marts.yml`, run with `dbt test`:
+Defined in the `_*.yml` files, run with `dbt test`. 18 tests across all layers, including:
 
-| Test | Model.column | Purpose |
-|---|---|---|
-| `unique`, `not_null` | `dim_customers.customer_id` | primary key integrity |
-| `unique`, `not_null` | `fact_orders.order_id` | primary key integrity |
-| `not_null` | `fact_orders.customer_id` | no orphan orders |
-| `relationships` | `fact_orders.customer_id → dim_customers.customer_id` | referential integrity between fact and dimension |
+| Test | Purpose |
+|---|---|
+| `unique`, `not_null` on primary keys | key integrity (customers, orders) |
+| `relationships` (fact → dim, orders → customers) | referential integrity between fact and dimension |
+| `unique` on `spending_rank`, `nation_name` | correctness of aggregations / window ranks |
 
-All 6 tests pass — the `relationships` test in particular guarantees every order references a customer that actually exists in the dimension.
+All tests pass — the `relationships` tests in particular guarantee no orphan records between fact and dimensions.
+
+---
+
+## CI
+
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
+it installs dbt, connects to Snowflake using credentials stored in **GitHub Secrets**, and runs `dbt build` (models + tests). A red check blocks broken changes from being merged.
+
+> A production setup would add a CD step deploying to a separate prod Snowflake target on merge; here dev and prod are the same environment, so only CI is wired up.
 
 ---
 
@@ -101,17 +136,14 @@ python -m venv venv
 # 2. install dbt with the Snowflake adapter
 pip install dbt-snowflake
 
-# 3. verify the connection
-dbt debug
-
-# 4. build all models
-dbt run
-
-# 5. run data quality tests
-dbt test
+# 3. from the tbi_demo/ project directory:
+dbt debug      # verify the Snowflake connection
+dbt run        # build all models
+dbt test       # run data quality tests
+dbt docs generate && dbt docs serve   # browse docs + lineage
 ```
 
-Connection settings live in `~/.dbt/profiles.yml` (Snowflake account, warehouse, database, role). Credentials are not committed.
+Connection settings live in `~/.dbt/profiles.yml` (Snowflake account, warehouse, database, role). Credentials are never committed.
 
 ---
 
@@ -119,4 +151,4 @@ Connection settings live in `~/.dbt/profiles.yml` (Snowflake account, warehouse,
 
 - Built with dbt Core 1.12 and the Snowflake adapter.
 - Source data is Snowflake's built-in TPCH sample dataset, so the project runs on any Snowflake trial account with no data loading required.
-- Structured to reflect real-world analytics engineering practices: source-driven staging, layered modeling, dimensional marts, and tested, version-controlled transformations.
+- Structured to reflect real-world analytics engineering practices: source-driven staging, layered modeling, dimensional marts, tested and version-controlled transformations, and CI.
