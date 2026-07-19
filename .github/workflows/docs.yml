@@ -26,14 +26,14 @@ jobs:
           python-version: "3.12"
       - run: pip install "dbt-snowflake==1.12.*"
       - name: Generate dbt docs
-        working-directory: ./tbi_demo
+        working-directory: ./retail_analytics
         run: dbt docs generate --profiles-dir ./ci
       - name: Prepare site
         run: |
           mkdir site
-          cp tbi_demo/target/index.html site/
-          cp tbi_demo/target/catalog.json site/
-          cp tbi_demo/target/manifest.json site/
+          cp retail_analytics/target/index.html site/
+          cp retail_analytics/target/catalog.json site/
+          cp retail_analytics/target/manifest.json site/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

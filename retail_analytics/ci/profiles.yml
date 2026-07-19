@@ -1,4 +1,4 @@
-tbi_demo:
+retail_analytics:
   target: ci
   outputs:
     ci:

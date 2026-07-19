@@ -31,5 +31,5 @@ jobs:
 
 
       - name: Run dbt build
-        working-directory: ./tbi_demo
+        working-directory: ./retail_analytics
         run: dbt build --profiles-dir ./ci

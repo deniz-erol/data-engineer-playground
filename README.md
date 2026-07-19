@@ -12,7 +12,7 @@ Interactive, always-current lineage graph — auto-generated and deployed via Gi
 
 **https://deniz-erol.github.io/data-engineer-playground/#!/overview?g_v=1**
 
-![Lineage Graph](tbi_demo/docs/lineage/lineage.png)
+![Lineage Graph](retail_analytics/docs/lineage/lineage.png)
 
 ---
 
@@ -137,7 +137,7 @@ python -m venv venv
 # 2. install dbt with the Snowflake adapter
 pip install dbt-snowflake
 
-# 3. from the tbi_demo/ project directory:
+# 3. from the retail_analytics/ project directory:
 dbt debug      # verify the Snowflake connection
 dbt run        # build all models
 dbt test       # run data quality tests
